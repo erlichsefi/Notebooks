@@ -39,6 +39,20 @@ def compute_winning_amount(amount,Spades_guess=None,Diamonds_guess=None,Hearts_g
             return amount*2000
     return 0
     
+    
+def compute_statistics_bins(predictions_cards,true_cards,bin_size,gambel_amount=100,name=None):
+    
+    results = list()
+    for i in range(0,len(predictions_cards)//bin_size):
+        results.append(
+            compute_statistics(predictions_cards.iloc[i*bin_size:(i+1)*bin_size],true_cards.iloc[i*bin_size:(i+1)*bin_size],gambel_amount=gambel_amount,name=name)
+        )
+    return results
+        
+    
+    
+    
+    
 def compute_statistics(predictions_cards,true_cards,gambel_amount=100,name=None):
     import locale,uuid
     locale.setlocale( locale.LC_ALL, '' )
@@ -46,12 +60,16 @@ def compute_statistics(predictions_cards,true_cards,gambel_amount=100,name=None)
     invested = 0
     earned = 0
     won = 0
+    
+    result = list()
+    count = 0
     for spades_gamble,spades in zip(predictions_cards,true_cards):
         invested += gambel_amount
         current_earned = compute_winning_amount(gambel_amount,Spades=spades,Spades_guess=spades_gamble)
         if current_earned > gambel_amount:
             won+=1
         earned += current_earned
+        
     
     return {
         "name": name if name else uuid.uuid4(),

@@ -1,0 +1,4 @@
+Pandas==1.4.3
+matplotlib==3.5.2
+sklearn==0.0
+openpyxl==3.0.10

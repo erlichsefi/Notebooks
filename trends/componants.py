@@ -9,6 +9,7 @@ def find_keyword(today,assumption,language,num_of_terms):
     Assuming that will '{assumption}'
     What we will be the common searchs across the web that will increase or decrease in the weeks before?, provide your estimation in the following format:
 
+    this is the json to respose with:
     [
     {{
         
@@ -24,7 +25,7 @@ def find_keyword(today,assumption,language,num_of_terms):
     
     result = call_open_ai(prompt)
 
-    result = json.loads(result)
+    result = json.loads(result.replace('\\"',"'"))
 
     print("Found keywords:")
     for entry in result:

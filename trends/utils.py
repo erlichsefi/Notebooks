@@ -154,3 +154,61 @@ def get_start_of_week(date=None):
     
     start_of_week = date - datetime.timedelta(days=date.weekday())
     return start_of_week.strftime("%Y-%m-%d")
+
+
+
+def google_search_results(search_term: str, num_results=None, **kwargs) :
+    from googleapiclient.discovery import build
+    import os
+
+    google_cse_id= os.environ["google_cse_id"]
+    google_api_key = os.environ["google_api_key"] 
+
+    search_engine = build("customsearch", "v1", developerKey=google_api_key)
+    cse = search_engine.cse()
+    # if self.siterestrict:
+    #     cse = cse.siterestrict()
+    if num_results:
+        kwargs['num'] = min(num_results, 10)  # Google API supports max 10 results per query
+
+    res = cse.list(q=search_term, cx=google_cse_id, **kwargs).execute()
+    return res.get("items", [])
+
+
+
+def selenium_get(
+    url,
+    headless=True,
+):
+    """start browser"""
+    from selenium import webdriver
+    from selenium.webdriver.chrome.service import Service
+    from webdriver_manager.chrome import ChromeDriverManager
+    from bs4 import BeautifulSoup
+
+    executable_path = ChromeDriverManager().install()
+    chrome_options = webdriver.ChromeOptions()
+
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--lang=en")
+    chrome_options.add_argument("ignore-certificate-errors")
+
+    if headless:
+        chrome_options.headless = True
+        chrome_options.add_argument("--headless")
+
+    service = Service(executable_path=executable_path)
+    webdriver_client = None
+    try:
+        webdriver_client = webdriver.Chrome(service=service, options=chrome_options)
+        webdriver_client.get(url)
+
+            
+        soup = BeautifulSoup(webdriver_client.page_source, 'html.parser')
+        return "\n".join(map(lambda x:x.get_text(),soup.find_all('p')))
+    finally:
+        if webdriver_client:
+            webdriver_client.close()
+        
+    
+#selenium_get("https://www.n12.co.il/")

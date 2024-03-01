@@ -1,14 +1,14 @@
-from utils import call_open_ai
+from utils import call_open_ai,google_search_results,selenium_get
 import json
 
-def find_keyword(today,assumption,language,num_of_terms):
+def find_keyword(today,assumption,language,num_of_terms,context=""):
     print("==== Finding Keywords ===")
     # Create a prompt that contains the paragraphs
     prompt = f"""
     Today is {today}
     Assuming that will '{assumption}'
     What we will be the common searchs across the web that will increase or decrease in the weeks before?, provide your estimation in the following format:
-
+    {context}
     this is the json to respose with:
     [
     {{
@@ -109,3 +109,66 @@ def make_decision(today,assumption,formated_search_results,minimum_trends):
     for res in result['forecast_analysis']:
         print(f" - {res['search_term']}: {res['claims']}")
     return result['final_decision']
+
+
+def search_keywords_in_google(today,action,num_of_search_term=1,num_results_per_query=1):
+    import json
+    # Create a prompt that contains the paragraphs
+    prompt = f"""
+    Today is {today}, you would like to learn what are the common methods people use when following the task '{action}'. 
+    What are terms you would like to search to obtain this knowledge, the term should start with 
+    produce {num_of_search_term} terms, the format is:
+    --
+    {{
+        "google_search_terms":[
+         "first term"
+         // more here
+        
+        ]
+    }}
+
+    """
+
+    result = call_open_ai(prompt)
+    # 
+    result = json.loads(result)
+    search_results = list()
+    print("Searching Google:")
+    for query in result['google_search_terms'][:num_of_search_term]:
+        print(f" v '{query}'")
+        responses = google_search_results(query,num_results=num_results_per_query)
+        for response in responses:
+            print(f":scraping: '{response['title']}'")
+            search_results.append(selenium_get(response['link']))
+    return search_results
+
+
+def find_keyword_in_google(today,action,assumption,language,num_of_keyword_to_extract,num_of_keyword_to_create,num_results_per_query):
+    import warnings
+    warnings.simplefilter(action='ignore')
+
+    search_results = search_keywords_in_google(today,action,num_of_search_term=num_of_keyword_to_create,num_results_per_query=num_results_per_query)
+    
+    all_search_terms = list()
+    for search_result in search_results:
+        search_terms = find_keyword(today,assumption,language,num_of_keyword_to_extract,context=search_result)
+        all_search_terms.append(search_terms)
+
+
+    context = f"Here search terms that was extracted by an LLM given a context from Google: {json.dumps(all_search_terms)}"
+    return find_keyword(today,assumption,language,num_of_keyword_to_extract,context=context)
+
+
+if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
+    num_of_keyword_to_extract=2
+    num_of_keyword_to_create=2
+    num_results_per_query=5
+    find_keyword_in_google("27/08/2024",
+                           "buy an house in israel",
+                           "prices will increase",
+                           "english",
+                           num_of_keyword_to_extract=num_of_keyword_to_extract,
+                           num_of_keyword_to_create=num_of_keyword_to_create,
+                           num_results_per_query=num_results_per_query)

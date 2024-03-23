@@ -32,7 +32,7 @@ def forecast(interest_over_time_df,kw,number_of_dates_to_comapre):
     # Visualize the forecast
     fig = model.plot(forecast)
 
-    return forecast.iloc[-number_of_dates_to_comapre][['trend','trend_lower','yhat_upper','yhat','yhat_lower','yhat_upper']].to_dict()
+    return fig, forecast.iloc[-number_of_dates_to_comapre][['trend','trend_lower','yhat_upper','yhat','yhat_lower','yhat_upper']].to_dict()
 
 
 def get_trend_data(kw,date_start,date_end,country,number_of_dates_to_comapre):
@@ -78,9 +78,9 @@ def get_trend_data_with_retry(kw,date_start,date_end,country,number_of_dates_to_
 def get_trend_and_forecast(kw,date_start,date_end,country,number_of_dates_to_comapre=1):
 
     interest_over_time_df,interest_over_time_df_lastest = get_trend_data_with_retry(kw,date_start,date_end,country,number_of_dates_to_comapre)
-    forecast_result = forecast(interest_over_time_df,kw,number_of_dates_to_comapre)
+    fig, forecast_result = forecast(interest_over_time_df,kw,number_of_dates_to_comapre)
 
-    return {
+    return fig,{
         "execution_status":True,
         **forecast_result,
         "actual":interest_over_time_df_lastest[kw].values[0]
@@ -122,8 +122,9 @@ def get_trend_and_forecast_with_retry(kw,objective,date_start,date_end,country,n
   
     for attempt in range(max_retries):
         try:
-            return {
-                **get_trend_and_forecast(kw,date_start, date_end,country,number_of_dates_to_comapre=number_of_dates_to_comapre),
+            fig,params = get_trend_and_forecast(kw,date_start, date_end,country,number_of_dates_to_comapre=number_of_dates_to_comapre)
+            return fig, {
+                **params,
                 "search_term":kw
             }
         except ValueError:

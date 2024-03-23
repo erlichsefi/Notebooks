@@ -1,5 +1,6 @@
 from utils import call_open_ai,google_search_results,selenium_get
 import json
+import pandas as pd
 
 def find_keyword(today,assumption,language,num_of_terms,context=""):
     print("==== Finding Keywords ===")
@@ -31,23 +32,25 @@ def find_keyword(today,assumption,language,num_of_terms,context=""):
     for entry in result:
         print(f" - {entry['search_term']}")
 
-    return result
+    return pd.DataFrame(result)
 
 
 def lookup_keyword_trend(assumption,in_question_start,in_question_end,country,forecast_terms):
 
     print("=== Looking up Trends ===")
     import json
-    from utils import get_trend_and_forecast_with_retry
+    from trends.utils import get_trend_and_forecast_with_retry
 
 
     foreca = list()
+    figures = list()
     for term in forecast_terms:   
         search_term = term['search_term']
 
         try:
-            forecast_response = get_trend_and_forecast_with_retry(search_term,assumption,in_question_start,in_question_end,country)
+            fig, forecast_response = get_trend_and_forecast_with_retry(search_term,assumption,in_question_start,in_question_end,country)
 
+            figures.append(fig)
             foreca.append({
                         **term,
                         **forecast_response
@@ -58,7 +61,8 @@ def lookup_keyword_trend(assumption,in_question_start,in_question_end,country,fo
 
 
     formated_search_results = list()
-    for f in foreca:
+    final_figures = dict()
+    for f,fig in zip(foreca,figures):
         if f['execution_status']:
             result = {}
             for k in f.keys():  
@@ -68,11 +72,12 @@ def lookup_keyword_trend(assumption,in_question_start,in_question_end,country,fo
                     result[k] = f[k]
             
             formated_search_results.append(result)
+            final_figures[f['search_term']] = fig
 
     print("Completed Ternd Forecasting:")
     for fore_term in formated_search_results:
         print(f" - '{fore_term['search_term']}'")
-    return formated_search_results
+    return final_figures, pd.DataFrame(formated_search_results)
 
 
 def make_decision(today,assumption,formated_search_results,minimum_trends):
@@ -155,7 +160,7 @@ def find_keyword_in_google(today,action,assumption,language,num_of_keyword_to_ex
         all_search_terms.append(search_terms)
 
 
-    context = f"Here search terms that was extracted by an LLM given a context from Google: {json.dumps(all_search_terms)}"
+    context = f"Here search terms that was extracted by an LLM given a context from Google: {pd.concat(all_search_terms).to_dict('records')}"
     return find_keyword(today,assumption,language,num_of_keyword_to_extract,context=context)
 
 

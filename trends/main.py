@@ -23,11 +23,13 @@ if __name__ == "__main__":
     assumption = "housing pricing in israel will keep decreaseing"
     negative_assumption = "housing pricing in israel will keep increasing"
     today = get_start_of_week()
+
     country = ""#ISR
     language = "English"
     minimum_trends = 0
     num_of_terms = 5
-    in_question_start, in_question_end = "2021-01-01", get_start_of_week()
+
+    in_question_start, in_question_end = "2021-01-01", today
 
 
     decision = pipeline(today,assumption,in_question_start,in_question_end,language,country,num_of_terms=num_of_terms,minimum_trends=minimum_trends)
